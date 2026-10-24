@@ -1,0 +1,51 @@
+name: Practical 4 - ML Artifacts
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  train-quality-test-upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Train model and generate metrics
+        run: python train_model.py
+
+      - name: Check model quality threshold
+        run: python quality_gate.py
+
+      - name: Run automated tests
+        run: python -m unittest discover -v
+
+      - name: Upload model, metrics, and dataset
+        uses: actions/upload-artifact@v4
+        with:
+          name: student-result-ml-artifacts
+          path: |
+            student_result_model.pkl
+            metrics.json
+            student_results.csv
+          if-no-files-found: error
+          retention-days: 7
